@@ -1,0 +1,27 @@
+<html>
+  <head>
+  </head>
+  <body>
+<!--
+  <input type="file" onchange="encodeImageFileAsURL(this)" />
+  <button onclick="process">convert</button> -->
+
+<hr>
+<form action="/encode" method="post" enctype="multipart/form-data">
+  <input type="file" name="image" />
+  <button type="submit" class="btn btn-primary">Upload</button>
+</form>
+
+  <script>
+    function encodeImageFileAsURL(element) {
+      var file = element.files[0];
+      var reader = new FileReader();
+
+      reader.onloadend = function() {
+        console.log('RESULT', reader.result)
+      }
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>
