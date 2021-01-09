@@ -4,6 +4,21 @@ version: 2.1
 orbs:
   # Declare a dependency on the welcome-orb
   welcome: circleci/welcome-orb@0.4.1
+
+
+deploy:
+  # working_directory: ~/synth
+  # docker:
+  #   - image: circleci/node:9-browsers
+  steps:
+    # Log the current branch
+    - run: echo ${CIRCLE_BRANCH}
+    - run:
+        name: Update Code in Droplet
+        # note: DROPLET_USER / DROPLET_IP vars are added in the CircleCI dashboard
+        command: rsync -e "ssh -o StrictHostKeyChecking=no" -r *.js ${DROPLET_USER}@${DROPLET_IP}:${DROPLET_PATH}
+    - run: pm2 restart ascii
+
 # Orchestrate or schedule a set of jobs
 workflows:
   # Name the workflow "welcome"
@@ -11,3 +26,6 @@ workflows:
     # Run the welcome/run job in its own container
     jobs:
       - welcome/run
+      - deploy:
+          # requires:
+          #   - build

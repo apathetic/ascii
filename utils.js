@@ -1,10 +1,10 @@
+const { compressToEncodedURIComponent, decompressFromEncodedURIComponent } = require('lz-string');
+const { spawnSync, spawn } = require('child_process');
+const pipe = (...fns) => (x) => fns.reduce((v, fn) => fn(v), x);
 const OUTPUT = 'qrcode.png';
 
 // const zip = require('jszip');
 // const { Readable } = require('stream');
-const { spawnSync, spawn } = require('child_process');
-
-const pipe = (...fns) => (x) => fns.reduce((v, fn) => fn(v), x);
 
 
 // OPTION 1
@@ -25,9 +25,10 @@ function asciify(input) {
   // const stream = Readable.from('asdf');
 
   // const { stdout, stderr } = await syncExec(`jp2a ${input}`);
-  const { stdout, stderr } = spawnSync(`jp2a ${input}`, {
+  const { stdout, stderr } = spawnSync(`jp2a --width=80 ${input}`, {
     // input: input,
-    shell: true
+    shell: true,
+    encoding : 'utf8' // for the spawnSync -- return data in utf8 (not a Buffer)
   });
 
   if (stdout) {
@@ -55,37 +56,34 @@ function qrencode(input) {
  * @param {string} input The input query param to URLify
  */
 function urlify(input) {
-  return input;
-  // return compress(input);
-  // make base64
-
-  // | awk '{print "http://maladjusted.ca?ascii="$1}'
+  return `http://maladjusted.ca?ascii=${input}`;
 }
 
 /*
  * Compresses a string, then base64 encodes it. Works best if the input has a
- * _reduced character set_... say, 16 chars in an ascii image?
- * @param {*} input
+ * reduced character set (ie. 16 chars used in an ascii image)
+ * @note replaces '/' and '+' in the result so as to be URL-friendly (base64url)
+ * @param {string} input
  */
 function compress(input) {
-  // const { stdout, stderr } = spawnSync(`echo ${input} | gzip | base64`, {
-  const { stdout, stderr } = spawnSync(`gzip -9 | base64 | tr -d '=' | tr '/+' '_-'`, {
-  // const { stdout, stderr } = spawnSync(`base64 | tr -d '=' | tr '/+' '_-'`, {
-    shell: true,
-    input: input,
-  })
+  return compressToEncodedURIComponent(input);
 
-  return stdout;
+  // const { stdout, stderr } = spawnSync(`gzip -9 | base64 | tr -d '=' | tr '/+' '_-'`, {
+  //   shell: true,
+  //   input: input,
+  // })
+
+  // return stdout;
 }
 
 function decompress(input) {
-  const { stdout, stderr } = spawnSync(`tr '_-' '/+' | base64 -d | gzip -d`, {
-    shell: true,
-    input: input, // + '==',    // the `==` is there for padding in the base64 string. not a huge deal, but it might throw warnings that the string is incomplete at times (ie. if not % 4 length)
-  })
+  return decompressFromEncodedURIComponent(input);
+  // const { stdout, stderr } = spawnSync(`tr '_-' '/+' | base64 -d | gzip -d`, {
+  //   shell: true,
+  //   input: input, // + '==',    // the `==` is there for padding in the base64 string. not a huge deal, but it might throw warnings that the string is incomplete at times (ie. if not % 4 length)
+  // })
 
-  return stdout;
-
+  // return stdout;
 }
 
 

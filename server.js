@@ -14,14 +14,14 @@ const { pipe, asciify, qrencode, compress, decompress, urlify } = require('./uti
 // CONSTS
 const TEMP = 'temp.jpg';
 const QRCODE = 'qrcode.png';
-const PORT = 5678;
+const PORT = 4000;
 
 // SETUP
 const app = express();
 const upload = multer({
   // storage: multer.memoryStorage(), // use a `stream`
   storage: multer.diskStorage({
-  //   // save it to `TEMP`, every time, overwriting whatever image was last uploaded.
+    // save it to `TEMP`, every time, overwriting whatever image was last uploaded.
     destination: (req, file, cb) => cb(null, './'),
     filename: (req, file, cb) => cb(null, TEMP)
   }),
@@ -29,6 +29,7 @@ const upload = multer({
     files: 1, // allow only 1 file per request
     fileSize: 1024 * 1024, // 1 MB (max file size)
   },
+  fileFilter: (req, file, cb) => cb(null, !!file.mimetype.match(/jpe?g/)),
 });
 
 
@@ -59,24 +60,31 @@ app.get('/encode', (req, res) => {
 
 
 app.post('/encode', upload.single('image'), async function(req, res, next) {
-// app.post('/encode', function(req, res, next) {
   if (req.file) { // || req.files) {
     // const data = req.file.buffer;
     // const stream = Readable.from(data);
-    const data = TEMP;
-
-
     // const readable = new Readable();
     // readable._read = () => {} // _read is required but you can noop it
     // readable.push(buffer)
     // readable.push(null)
     // readable.pipe(data) // consume the stream
 
+
+    // console.log(req.file);
+
+    // if (!req.file.mimetype.match(/jpe?g/) || req.file.size > 1000000) {
+    //   res.send('oh you need to upload a jpeg smaller than 1MB for this dumb thing');
+    //   return
+    // }
+
+    console.log('now ascii-code-ifying');
+
     const qrcode = pipe(asciify, compress, urlify, qrencode)(TEMP);
 
+
     res.send(`
-      <code style="word-break:break-all;display:block;">http://maladjusted.ca?ascii=${qrcode}</code>
-      <img src="${QRCODE}" />
+      <code style="word-break:break-all;display:block;">${qrcode}</code>
+      <img src="https://maladjusted.ca/${QRCODE}" />
     `);
     // res.send(qrcode);
     // who cares about clean up, TEMP, QRCODE
@@ -87,7 +95,7 @@ app.post('/encode', upload.single('image'), async function(req, res, next) {
 
 
 app.get(`/${QRCODE}`, (req, res) => {
-  const code = path.resolve(__dirname, QRCODE);
+  const code = path.join(__dirname, QRCODE);
   res.sendFile(code);
 });
 
